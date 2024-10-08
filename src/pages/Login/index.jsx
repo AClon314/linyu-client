@@ -7,7 +7,7 @@ import LoginApi from "../../api/login.js";
 import {useEffect, useState} from "react";
 import CreateHomeWindow from "../Home/window.jsx";
 import {invoke} from "@tauri-apps/api/core";
-import {WebviewWindow} from "@tauri-apps/api/webviewWindow";
+// import {WebviewWindow} from "@tauri-apps/api/webviewWindow";
 import {useToast} from "../../componets/CustomToast/index.jsx";
 import {getLocalItem, setLocalItem} from "../../utils/storage.js";
 import CreateAboutWindow from "../AboutWindow/window.jsx";
@@ -67,7 +67,7 @@ export default function Login() {
         const encryptedPassword = encrypt.encrypt(password);
         LoginApi.login({account: account, password: encryptedPassword})
             .then((res) => {
-                if (res.code === 0) {
+                if (res.code === 0 && window.__TAURI_INTERNALS__) {
                     invoke('save_user_info', {
                         userid: res.data.userId,
                         username: res.data.username,
