@@ -35,6 +35,7 @@ const VoiceRecorder = ({onComplete}) => {
         setRecording(true);
         setRecordingTime(0);
         audioChunksRef.current = [];
+        //https://github.com/tauri-apps/wry/issues/85 https://github.com/tauri-apps/tauri/discussions/8426#discussioncomment-8268622
         const stream = await navigator.mediaDevices.getUserMedia({audio: true});
         mediaRecorderRef.current = new MediaRecorder(stream);
 
@@ -113,8 +114,9 @@ const VoiceRecorder = ({onComplete}) => {
     };
 
     const handlerClose = () => {
-        stopRecording()
         setIsVoiceOpen(false)
+        stopRecording()
+        // 由于stopRecording报错，所以先执行setIsVoiceOpen(false)关闭UI界面，优先保证可操作性
     }
 
     const handlerStart = () => {
