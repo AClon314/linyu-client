@@ -487,17 +487,7 @@ export default function Home() {
         </div>
       </RightClickContent>
       <CustomBox className="home">
-        <div className="home-content">
-          <Switch>
-            <Route path="/home/chat" component={Chat}></Route>
-            <Route path="/home/friend" component={Friend}></Route>
-            <Route path="/home/set" component={Set}></Route>
-            <Route path="/home/notify" component={Notify}></Route>
-            <Route path="/home/talk" component={Talk}></Route>
-            <Redirect path="/home" to="/home/chat" />
-          </Switch>
-        </div>
-        <CustomDragDiv className="home-nav">
+      <CustomDragDiv className="home-nav">
           <div>
             <CustomModal isOpen={isOpenEditInfo}>
               <div className="edit-info">
@@ -681,6 +671,17 @@ export default function Home() {
             <img style={{ height: 60 }} src="/logo.png" alt="" />
           </div>
         </CustomDragDiv>
+
+        <div className="home-content">
+          <Switch>
+            <Route path="/home/chat" component={Chat}></Route>
+            <Route path="/home/friend" component={Friend}></Route>
+            <Route path="/home/set" component={Set}></Route>
+            <Route path="/home/notify" component={Notify}></Route>
+            <Route path="/home/talk" component={Talk}></Route>
+            <Redirect path="/home" to="/home/chat" />
+          </Switch>
+        </div>        
 
         <WindowOperation />
       </CustomBox>
