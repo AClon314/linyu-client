@@ -23,6 +23,9 @@ style: |
   div {
     width:100%;
   }
+  section {
+    padding: 30px;
+  }
 
 ---
 # 技术报告
@@ -30,7 +33,7 @@ style: |
 随着移动设备和桌面设备的普及，用户希望能够在不同设备上无缝切换，享受**一致**的聊天体验。本项目旨在开发一款跨平台聊天软件，以满足用户多样化的沟通需求。
 
 - **项目目标**
-  跨平台：支持在Windows、macOS、Linux、iOS和Android等多个平台上运行
+  跨平台：支持在Windows、macOS、Linux、(v2支持iOS和Android)等多平台上运行
   多种聊天功能：包括文本/语音/文件消息、音视频聊天等
   数据安全和用户隐私：采用行业级的加密技术和认证机制，保护用户数据和隐私
   集成语音转文字功能：利用Fast-Whisper，实现语音消息的实时转文字功能
@@ -69,8 +72,6 @@ cd deploy/compose
 vim .env broker.conf #密码、smtp邮箱、voice model、minio accessKey
 docker-compose up -d #拉取组合镜像
 xdg-open http://localhost:9001/access-keys #手动添加accessKey
-
-
 ```
 
 
@@ -748,23 +749,84 @@ minio:
 ![](files/image.png)
 
 ---
+<foot>https://zhuanlan.zhihu.com/p/633447192</foot>
+
+## Whisper
+
+<div style="font-size:23px; width:660px;">
+
+- 4种训练数据
+  1. 英文asr，英文语音→英文文本
+  1. 非英文语音→英文文本，翻译
+  1. 单一非英语的asr，如韩/日语
+  1. 非语音；如背景音乐。代码里有关于non-speech-prob的计算
+- 自回归结构: transformer encoder decoder
+- 基于prompts，给具体的语音任务，换上不同的轨道
+- 这个时间戳信息，真的很不错。把好的对齐，都留下来了。把不好的对齐（分数低的），都舍弃了。即如何在weak 有监督的speech-text对上，做深度对齐。这是个好topic
+- 相比wav2vec2.0，whisper好太多。平均从29.3%的错误率降低到了12.8%，即提升效果55.2%
+- 核心就一点：大数据，68万小时，真是好！
+
+</div>
+
+
+![bg right:45% fit](https://pica.zhimg.com/v2-efbb9a1729336c49bb50f25dc1deafee_r.jpg)
+
+---
+<foot>https://github.com/openai/whisper/discussions/937</foot>
+
 ## Fast-Whisper
+<img src="https://avatars.githubusercontent.com/u/4805513?s=128&v=4" style="height: 64px; border-radius:50%;" />@guillaumekln: 我们将 Whisper 模型集成到 CTranslate2 中，这是一个用于 Transformer 模型的快速推理引擎。该项目实现了许多有用的推理功能，如优化的 CPU 和 GPU 执行、异步执行、多 GPU 执行、8 位量化等。
 
+实现|使用“小”模型的时间|使用“中等”模型的时间
+|-|-|-|
+openai/whisper| 1m37s|3m16s
+CTranslate2|0m25s|0m42s 
+
+测试
+```sh
+git clone https://huggingface.co/Systran/faster-whisper-small.git
+docker run -d --publish 8000:8000 --volume /model:/model fedirz/faster-whisper-server:latest-cpu
+curl http://127.0.0.1:8000/v1/audio/transcriptions -F "file=@1.wav" -F"model=/model/faster-whisper-small/"
+```
 
 ---
-# 安全性与隐私
-- 数据加密
-- 用户隐私保护
-- 安全通信协议
+<foot>https://cloud.tencent.com/developer/article/2362818</foot>
+
+## RocketMQ
+是**阿里巴巴开源**的一个消息中间件，在阿里内部历经了双十一等很多高并发场景的考验，能够处理亿万级别的消息。2016年开源后捐赠给Apache，现在是Apache的一个**顶级项目**。在阿里内部，RocketMQ 很好地服务了集团大大小小上千个应用，在每年的双十一当天，更有不可思议的**万亿级消息**通过 RocketMQ 流转。
+
+RocketMQ 是一个 **队列模型** 的消息中间件，具有高性能、高可靠、高实时、分布式 的特点。它是一个采用 Java 语言开发的分布式的消息系统，支持事务消息、顺序消息、批量消息、定时消息、消息回溯等。
+
+总结来说，RocketMQ 通过使用在一个 Topic 中配置多个队列并且每个队列维护每个消费者组的消费位置 实现了 **主题模式/发布订阅**模式 。一个 message queue只能被一个消费者消费！
+
 ---
-# 性能优化
-- 前端性能优化
-  - 代码分割
-  - 缓存策略
-- 后端性能优化
-  - 数据库优化
-  - 缓存使用
+
+com.cershy.linyuserver.service.MQProducerService
+```java
+public class MQProducerService
+  constant log
+  private field messageTimeOut
+  private field enabled
+  private constant topic
+  private field rocketMQTemplate
+  public method send(Object)
+  public method sendMsgToUser(Message)
+  public method sendMsgToGroup(Message)
+  public method sendAsyncData(String)
+    class new SendCallback() {...}
+      public method onSuccess(SendResult)
+      public method onException(Throwable)
+  public method sendDelayData(String, int)
+  public method sendOneWayData(String)
+```
+
 
 ---
 # 心得
 一个我们每天都在使用的IM聊天软件，背后竟然包括这么多框架。它们齐心协力、独立工作，保证了用户的聊天体验。
+
+由于Linux上webkit2gtk不支持webRTC，可能需要手动编译。故仍然不推荐tauri做跨平台框架，优先用electron
+```js
+//https://github.com/tauri-apps/wry/issues/85 https://github.com/tauri-apps/tauri/discussions/8426#discussioncomment-8268622
+const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+```
